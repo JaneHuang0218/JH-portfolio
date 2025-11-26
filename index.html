@@ -2,58 +2,96 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Level 5: 傳送門互動作品集</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>JANE'S UNIVERSE (雙平台完美版)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #f0f0f0; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; user-select: none; -webkit-user-select: none; }
         
-        /* 介面 UI */
-        #ui-layer {
-            position: absolute; top: 20px; width: 100%; text-align: center;
-            pointer-events: none; user-select: none;
+        /* 歡迎畫面 */
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; transition: opacity 0.5s;
+        }
+        #start-btn {
+            padding: 15px 40px; font-size: 24px; border: 2px solid #00ffff; color: #00ffff;
+            background: transparent; border-radius: 50px; cursor: pointer; margin-top: 30px;
+            box-shadow: 0 0 15px #00ffff; transition: 0.3s;
+        }
+        #start-btn:hover { background: #00ffff; color: black; }
+
+        /* UI */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        .brand-logo {
+            position: absolute; top: 20px; left: 20px;
+            color: white; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px cyan;
+            letter-spacing: 2px;
+        }
+        .controls-hint {
+            position: absolute; bottom: 20px; right: 20px;
+            color: #888; font-size: 14px; text-align: right;
         }
 
-        /* 互動提示框 (當靠近傳送門時顯示) */
+        /* 互動提示 */
         #interaction-ui {
-            position: absolute; 
-            bottom: 100px; 
-            width: 100%; 
-            text-align: center;
-            display: none; /* 預設隱藏 */
-            pointer-events: none;
+            position: absolute; bottom: 180px; width: 100%; text-align: center;
+            display: none; pointer-events: none;
         }
-        
         .msg-box {
-            display: inline-block;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 20px;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            display: inline-block; background: rgba(0, 0, 0, 0.8); color: white;
+            padding: 15px 30px; border-radius: 30px; font-size: 18px;
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
         }
 
-        .key-hint {
-            display: block;
-            margin-top: 5px;
-            font-size: 14px;
-            color: #FFFF00; /* 黃色文字 */
+        /* 搖桿區域 */
+        #joystick-zone {
+            position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px;
+            z-index: 10; pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+            .brand-logo { font-size: 18px; }
+            #interaction-ui { bottom: 40%; }
+            #joystick-zone { bottom: 30px; left: 30px; }
+            .controls-hint { display: none; } /* 手機不顯示鍵盤提示 */
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-layer">
-        <h2>我的 3D 世界</h2>
-        <p><b>W A S D</b> 移動 | 走到光柱前按 <b>Enter</b> 進入</p>
+    <!-- 歡迎畫面 -->
+    <div id="start-screen">
+        <h1 style="text-align: center; margin: 0; font-size: 40px; text-shadow: 0 0 20px cyan;">JANE'S WORLD</h1>
+        <p style="color: #aaa; margin-top: 10px;">Exploring the Digital Universe</p>
+        <button id="start-btn">ENTER WORLD</button>
     </div>
+
+    <!-- UI 層 -->
+    <div id="ui-layer">
+        <div class="brand-logo">JANE'S PORTFOLIO</div>
+        <div class="controls-hint">
+            電腦：W A S D 移動 | Enter 互動<br>
+            手機：左側搖桿 | 點擊互動
+        </div>
+    </div>
+
+    <!-- 搖桿區域 -->
+    <div id="joystick-zone"></div>
 
     <!-- 互動提示 -->
     <div id="interaction-ui">
         <div class="msg-box">
-            <span id="portal-title">作品標題</span>
-            <span class="key-hint">按下 Enter 前往</span>
+            <strong id="portal-title" style="font-size: 22px; color: cyan;">標題</strong><br>
+            <span style="font-size:14px; color:#ffff00; margin-top: 5px; display:block;">點擊 / Enter 進入</span>
         </div>
     </div>
+
+    <!-- 搖桿套件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 
     <!-- Import Map -->
     <script type="importmap">
@@ -69,112 +107,256 @@
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // --- 1. 初始化場景 ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.Fog(0x050505, 10, 60); // 霧氣稍微調遠一點
+        // --- 全域變數 ---
+        let scene, camera, renderer, clock;
+        let player, mixer, actions = {}, activeAction, previousAction;
+        let portals = [];
+        let isGameActive = false;
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, -10);
+        // 輸入狀態
+        const inputState = {
+            keyFwd: 0,  // 鍵盤前後
+            keyTurn: 0, // 鍵盤左右
+            joyFwd: 0,  // 搖桿前後
+            joyTurn: 0  // 搖桿左右
+        };
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
-
-        // --- 2. 燈光與地板 ---
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
-        hemiLight.position.set(0, 20, 0);
-        scene.add(hemiLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(-3, 10, -10);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-
-        const ground = new THREE.Mesh(
-            new THREE.PlaneGeometry(200, 200),
-            new THREE.MeshPhongMaterial({ color: 0x111111, depthWrite: false })
-        );
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        const grid = new THREE.GridHelper(200, 40, 0x00ff00, 0x00ff00);
-        grid.material.opacity = 0.1;
-        grid.material.transparent = true;
-        scene.add(grid);
-
-        // --- 3. 建立傳送門 (Portals) ---
-        const portals = [];
-        
-        function createPortal(x, z, color, title, url) {
-            // 發光柱子
-            const geometry = new THREE.BoxGeometry(2, 4, 0.2);
-            const material = new THREE.MeshPhongMaterial({ 
-                color: color, 
-                emissive: color,
-                emissiveIntensity: 0.5,
-                transparent: true, opacity: 0.8
-            });
-            const portal = new THREE.Mesh(geometry, material);
-            portal.position.set(x, 2, z);
-            
-            // 地板光圈
-            const ringGeo = new THREE.RingGeometry(1.5, 2, 32);
-            const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.set(x, 0.05, z);
-
-            // 儲存資料
-            portal.userData = { title: title, url: url };
-            
-            scene.add(portal);
-            scene.add(ring);
-            portals.push(portal);
-        }
-
-        // === 設定你的作品連結 ===
-        createPortal(-10, 5, 0xff0000, "測試烏拉拉", "https://www.instagram.com");
-        createPortal(0, 15, 0x00ff00, "測試哇嘎嘎", "https://www.google.com");
-        createPortal(10, 5, 0x0000ff, "測試一逼鴨", "https://www.youtube.com");
-
-
-        // --- 4. 載入機器人 ---
-        let player, mixer;
-        let actions = {};
-        let activeAction, previousAction;
-
-        const loader = new GLTFLoader();
-        loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', function (gltf) {
-            player = gltf.scene;
-            player.scale.set(0.5, 0.5, 0.5);
-            scene.add(player);
-
-            mixer = new THREE.AnimationMixer(player);
-            const animations = gltf.animations;
-
-            function getAction(name) {
-                const clip = THREE.AnimationClip.findByName(animations, name);
-                return clip ? mixer.clipAction(clip) : null;
-            }
-
-            actions['Idle'] = getAction('Idle');
-            actions['Walking'] = getAction('Walking');
-            actions['Running'] = getAction('Running');
-
-            activeAction = actions['Idle'];
-            if(activeAction) activeAction.play();
+        // 1. 啟動按鈕
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const screen = document.getElementById('start-screen');
+            screen.style.opacity = '0';
+            setTimeout(() => {
+                screen.style.display = 'none';
+                isGameActive = true;
+                // 播放背景音樂可以在這裡加入
+            }, 500);
         });
 
+        // 2. 初始化
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510);
+            scene.fog = new THREE.Fog(0x050510, 10, 90);
 
-        // --- 5. 遊戲邏輯與控制 ---
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, -10);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // 燈光
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+            hemiLight.position.set(0, 20, 0);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+            dirLight.position.set(-3, 10, -10);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // 地板與網格
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(200, 200),
+                new THREE.MeshPhongMaterial({ color: 0x111111, depthWrite: false })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const grid = new THREE.GridHelper(200, 40, 0x00ffff, 0x222222);
+            grid.material.opacity = 0.2;
+            grid.material.transparent = true;
+            scene.add(grid);
+
+            // 星空
+            const starGeo = new THREE.BufferGeometry();
+            const starPos = [];
+            for(let i=0; i<1500; i++) {
+                starPos.push((Math.random() - 0.5) * 200); // x
+                starPos.push(Math.random() * 100);         // y (只在天空)
+                starPos.push((Math.random() - 0.5) * 200); // z
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.3 }));
+            scene.add(stars);
+
+            // 傳送門
+            createPortal(-8, 5, 0xff0080, "Instagram", "https://www.instagram.com");
+            createPortal(0, 15, 0x00ffff, "個人履歷", "https://www.google.com");
+            createPortal(8, 5, 0xffff00, "YouTube", "https://www.youtube.com");
+
+            // 載入機器人
+            const loader = new GLTFLoader();
+            loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', function (gltf) {
+                player = gltf.scene;
+                player.scale.set(0.5, 0.5, 0.5);
+                scene.add(player);
+
+                mixer = new THREE.AnimationMixer(player);
+                const anims = gltf.animations;
+                const getClip = (name) => {
+                    const clip = THREE.AnimationClip.findByName(anims, name);
+                    return clip ? mixer.clipAction(clip) : null;
+                };
+
+                actions['Idle'] = getClip('Idle');
+                actions['Walking'] = getClip('Walking');
+                actions['Running'] = getClip('Running');
+                
+                activeAction = actions['Idle'];
+                if(activeAction) activeAction.play();
+            });
+
+            clock = new THREE.Clock();
+            animate();
+        }
+
+        function createPortal(x, z, color, title, url) {
+            const group = new THREE.Group();
+            
+            // 光柱
+            const geo = new THREE.BoxGeometry(2, 4, 0.2);
+            const mat = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.8, transparent: true, opacity: 0.8 });
+            const portal = new THREE.Mesh(geo, mat);
+            portal.position.y = 2;
+            
+            // 地板光圈
+            const ring = new THREE.Mesh(
+                new THREE.RingGeometry(1.5, 2, 32),
+                new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide })
+            );
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.05;
+
+            group.add(portal);
+            group.add(ring);
+            group.position.set(x, 0, z);
+            group.userData = { title, url };
+            
+            scene.add(group);
+            portals.push(group);
+        }
+
+        // 3. 輸入控制系統 (關鍵修復)
+        
+        // A. 鍵盤控制 (使用 e.code 避免輸入法問題)
         const keysPressed = {};
-        window.addEventListener('keydown', (e) => keysPressed[e.code] = true);
-        window.addEventListener('keyup', (e) => keysPressed[e.code] = false);
+        window.addEventListener('keydown', (e) => { keysPressed[e.code] = true; });
+        window.addEventListener('keyup', (e) => { keysPressed[e.code] = false; });
 
-        // 切換動畫
+        // B. 搖桿控制
+        const joystickManager = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static',
+            position: { left: '50%', top: '50%' },
+            color: 'cyan'
+        });
+
+        joystickManager.on('move', (evt, data) => {
+            if (data.vector) {
+                inputState.joyFwd = data.vector.y; 
+                inputState.joyTurn = -data.vector.x; 
+            }
+        });
+
+        joystickManager.on('end', () => {
+            inputState.joyFwd = 0;
+            inputState.joyTurn = 0;
+        });
+
+        // 4. 動畫迴圈
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!isGameActive) return;
+
+            const dt = clock.getDelta();
+            if (mixer) mixer.update(dt);
+
+            if (player) {
+                // --- 1. 計算鍵盤輸入 ---
+                inputState.keyFwd = 0;
+                inputState.keyTurn = 0;
+
+                // 支援 W/S/Up/Down
+                if (keysPressed['KeyW'] || keysPressed['ArrowUp']) inputState.keyFwd = 1;
+                if (keysPressed['KeyS'] || keysPressed['ArrowDown']) inputState.keyFwd = -1;
+                
+                // 支援 A/D/Left/Right
+                if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) inputState.keyTurn = 1;
+                if (keysPressed['KeyD'] || keysPressed['ArrowRight']) inputState.keyTurn = -1;
+
+                // --- 2. 合併輸入 (搖桿優先，若搖桿沒動則用鍵盤) ---
+                // 這樣電腦版和手機版都能完美運作
+                const finalFwd = inputState.joyFwd !== 0 ? inputState.joyFwd : inputState.keyFwd;
+                const finalTurn = inputState.joyTurn !== 0 ? inputState.joyTurn : inputState.keyTurn;
+
+                const moveSpeed = 10 * dt;
+                const rotSpeed = 3 * dt;
+
+                // --- 3. 執行移動 ---
+                if (Math.abs(finalFwd) > 0.1) {
+                    player.translateZ(finalFwd * moveSpeed);
+                    fadeToAction('Running', 0.2);
+                } else {
+                    fadeToAction('Idle', 0.2);
+                }
+
+                if (Math.abs(finalTurn) > 0.1) {
+                    player.rotation.y += finalTurn * rotSpeed;
+                }
+
+                // --- 4. 攝影機跟隨 ---
+                const offset = new THREE.Vector3(0, 6, -12);
+                const target = offset.applyMatrix4(player.matrixWorld);
+                camera.position.lerp(target, 0.1);
+                camera.lookAt(player.position.x, player.position.y + 2, player.position.z);
+
+                // --- 5. 傳送門互動 ---
+                let nearPortal = null;
+                portals.forEach(p => {
+                    p.children[0].rotation.y += 0.02; 
+                    if (player.position.distanceTo(p.position) < 3) nearPortal = p;
+                });
+
+                const ui = document.getElementById('interaction-ui');
+                const title = document.getElementById('portal-title');
+                
+                if (nearPortal) {
+                    ui.style.display = 'block';
+                    title.innerText = nearPortal.userData.title;
+                    
+                    // 電腦版 Enter 鍵監聽
+                    if (keysPressed['Enter']) {
+                        window.open(nearPortal.userData.url, '_blank');
+                        keysPressed['Enter'] = false; // 避免重複觸發
+                    }
+                } else {
+                    ui.style.display = 'none';
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 手機版：點擊螢幕也可以進入傳送門
+        window.addEventListener('click', (e) => {
+            // 避免點到搖桿也觸發
+            if(e.target.closest('#joystick-zone')) return;
+
+            const ui = document.getElementById('interaction-ui');
+            if (ui.style.display === 'block' && player) {
+                 let nearest = null;
+                 let minDist = 999;
+                 portals.forEach(p => {
+                     const d = player.position.distanceTo(p.position);
+                     if(d < 3.5 && d < minDist) { nearest = p; minDist = d; }
+                 });
+                 if(nearest) window.open(nearest.userData.url, '_blank');
+            }
+        });
+
         function fadeToAction(name, duration) {
             if (!actions[name] || activeAction === actions[name]) return;
             previousAction = activeAction;
@@ -183,86 +365,15 @@
             activeAction.reset().fadeIn(duration).play();
         }
 
-        const clock = new THREE.Clock();
-        const uiDiv = document.getElementById('interaction-ui');
-        const titleSpan = document.getElementById('portal-title');
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const dt = clock.getDelta();
-
-            if (mixer) mixer.update(dt);
-
-            if (player) {
-                // 移動邏輯
-                const moveForward = keysPressed['KeyW'] || keysPressed['ArrowUp'];
-                const moveBackward = keysPressed['KeyS'] || keysPressed['ArrowDown'];
-                const rotateLeft = keysPressed['KeyA'] || keysPressed['ArrowLeft'];
-                const rotateRight = keysPressed['KeyD'] || keysPressed['ArrowRight'];
-
-                const speed = 10 * dt;
-                const rotateSpeed = 3 * dt;
-
-                if (moveForward) {
-                    player.translateZ(speed);
-                    fadeToAction('Running', 0.2);
-                } else if (moveBackward) {
-                    player.translateZ(-speed);
-                    fadeToAction('Walking', 0.2);
-                } else {
-                    fadeToAction('Idle', 0.2);
-                }
-
-                if (rotateLeft) player.rotation.y += rotateSpeed;
-                if (rotateRight) player.rotation.y -= rotateSpeed;
-
-                // 攝影機跟隨
-                const relativeCameraOffset = new THREE.Vector3(0, 6, -12);
-                const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
-                camera.position.lerp(cameraOffset, 0.1);
-                const lookAtPos = new THREE.Vector3(player.position.x, player.position.y + 2, player.position.z);
-                camera.lookAt(lookAtPos);
-
-
-                // --- 檢查傳送門互動 ---
-                let nearPortal = null;
-                
-                // 檢查每一個傳送門
-                portals.forEach(portal => {
-                    portal.rotation.y += 0.02; // 讓傳送門旋轉
-                    
-                    const dist = player.position.distanceTo(portal.position);
-                    if (dist < 3) { // 距離小於 3 就算靠近
-                        nearPortal = portal;
-                    }
-                });
-
-                if (nearPortal) {
-                    // 顯示 UI
-                    uiDiv.style.display = 'block';
-                    titleSpan.innerText = nearPortal.userData.title;
-
-                    // 偵測 Enter 鍵
-                    if (keysPressed['Enter']) {
-                        window.open(nearPortal.userData.url, '_blank');
-                        keysPressed['Enter'] = false; // 重置按鍵狀態，避免重複開啟
-                    }
-                } else {
-                    // 隱藏 UI
-                    uiDiv.style.display = 'none';
-                }
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
         window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            if(camera && renderer) {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+            }
         });
+
+        init();
     </script>
 </body>
 </html>
