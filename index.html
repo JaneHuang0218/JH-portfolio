@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Level 5: 傳送門互動作品集</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; font-family: sans-serif; }
+        
+        /* 介面 UI */
+        #ui-layer {
+            position: absolute; top: 20px; width: 100%; text-align: center;
+            pointer-events: none; user-select: none;
+        }
+
+        /* 互動提示框 (當靠近傳送門時顯示) */
+        #interaction-ui {
+            position: absolute; 
+            bottom: 100px; 
+            width: 100%; 
+            text-align: center;
+            display: none; /* 預設隱藏 */
+            pointer-events: none;
+        }
+        
+        .msg-box {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 20px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .key-hint {
+            display: block;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #FFFF00; /* 黃色文字 */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2>我的 3D 世界</h2>
+        <p><b>W A S D</b> 移動 | 走到光柱前按 <b>Enter</b> 進入</p>
+    </div>
+
+    <!-- 互動提示 -->
+    <div id="interaction-ui">
+        <div class="msg-box">
+            <span id="portal-title">作品標題</span>
+            <span class="key-hint">按下 Enter 前往</span>
+        </div>
+    </div>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // --- 1. 初始化場景 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.Fog(0x050505, 10, 60); // 霧氣稍微調遠一點
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, -10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. 燈光與地板 ---
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(-3, 10, -10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(200, 200),
+            new THREE.MeshPhongMaterial({ color: 0x111111, depthWrite: false })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const grid = new THREE.GridHelper(200, 40, 0x00ff00, 0x00ff00);
+        grid.material.opacity = 0.1;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // --- 3. 建立傳送門 (Portals) ---
+        const portals = [];
+        
+        function createPortal(x, z, color, title, url) {
+            // 發光柱子
+            const geometry = new THREE.BoxGeometry(2, 4, 0.2);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: color, 
+                emissive: color,
+                emissiveIntensity: 0.5,
+                transparent: true, opacity: 0.8
+            });
+            const portal = new THREE.Mesh(geometry, material);
+            portal.position.set(x, 2, z);
+            
+            // 地板光圈
+            const ringGeo = new THREE.RingGeometry(1.5, 2, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.set(x, 0.05, z);
+
+            // 儲存資料
+            portal.userData = { title: title, url: url };
+            
+            scene.add(portal);
+            scene.add(ring);
+            portals.push(portal);
+        }
+
+        // === 設定你的作品連結 ===
+        createPortal(-10, 5, 0xff0000, "攝影", "https://www.instagram.com");
+        createPortal(0, 15, 0x00ff00, "品牌", "https://www.google.com");
+        createPortal(10, 5, 0x0000ff, "小遊戲", "https://www.youtube.com");
+
+
+        // --- 4. 載入機器人 ---
+        let player, mixer;
+        let actions = {};
+        let activeAction, previousAction;
+
+        const loader = new GLTFLoader();
+        loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', function (gltf) {
+            player = gltf.scene;
+            player.scale.set(0.5, 0.5, 0.5);
+            scene.add(player);
+
+            mixer = new THREE.AnimationMixer(player);
+            const animations = gltf.animations;
+
+            function getAction(name) {
+                const clip = THREE.AnimationClip.findByName(animations, name);
+                return clip ? mixer.clipAction(clip) : null;
+            }
+
+            actions['Idle'] = getAction('Idle');
+            actions['Walking'] = getAction('Walking');
+            actions['Running'] = getAction('Running');
+
+            activeAction = actions['Idle'];
+            if(activeAction) activeAction.play();
+        });
+
+
+        // --- 5. 遊戲邏輯與控制 ---
+        const keysPressed = {};
+        window.addEventListener('keydown', (e) => keysPressed[e.code] = true);
+        window.addEventListener('keyup', (e) => keysPressed[e.code] = false);
+
+        // 切換動畫
+        function fadeToAction(name, duration) {
+            if (!actions[name] || activeAction === actions[name]) return;
+            previousAction = activeAction;
+            activeAction = actions[name];
+            previousAction.fadeOut(duration);
+            activeAction.reset().fadeIn(duration).play();
+        }
+
+        const clock = new THREE.Clock();
+        const uiDiv = document.getElementById('interaction-ui');
+        const titleSpan = document.getElementById('portal-title');
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+
+            if (mixer) mixer.update(dt);
+
+            if (player) {
+                // 移動邏輯
+                const moveForward = keysPressed['KeyW'] || keysPressed['ArrowUp'];
+                const moveBackward = keysPressed['KeyS'] || keysPressed['ArrowDown'];
+                const rotateLeft = keysPressed['KeyA'] || keysPressed['ArrowLeft'];
+                const rotateRight = keysPressed['KeyD'] || keysPressed['ArrowRight'];
+
+                const speed = 10 * dt;
+                const rotateSpeed = 3 * dt;
+
+                if (moveForward) {
+                    player.translateZ(speed);
+                    fadeToAction('Running', 0.2);
+                } else if (moveBackward) {
+                    player.translateZ(-speed);
+                    fadeToAction('Walking', 0.2);
+                } else {
+                    fadeToAction('Idle', 0.2);
+                }
+
+                if (rotateLeft) player.rotation.y += rotateSpeed;
+                if (rotateRight) player.rotation.y -= rotateSpeed;
+
+                // 攝影機跟隨
+                const relativeCameraOffset = new THREE.Vector3(0, 6, -12);
+                const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
+                camera.position.lerp(cameraOffset, 0.1);
+                const lookAtPos = new THREE.Vector3(player.position.x, player.position.y + 2, player.position.z);
+                camera.lookAt(lookAtPos);
+
+
+                // --- 檢查傳送門互動 ---
+                let nearPortal = null;
+                
+                // 檢查每一個傳送門
+                portals.forEach(portal => {
+                    portal.rotation.y += 0.02; // 讓傳送門旋轉
+                    
+                    const dist = player.position.distanceTo(portal.position);
+                    if (dist < 3) { // 距離小於 3 就算靠近
+                        nearPortal = portal;
+                    }
+                });
+
+                if (nearPortal) {
+                    // 顯示 UI
+                    uiDiv.style.display = 'block';
+                    titleSpan.innerText = nearPortal.userData.title;
+
+                    // 偵測 Enter 鍵
+                    if (keysPressed['Enter']) {
+                        window.open(nearPortal.userData.url, '_blank');
+                        keysPressed['Enter'] = false; // 重置按鍵狀態，避免重複開啟
+                    }
+                } else {
+                    // 隱藏 UI
+                    uiDiv.style.display = 'none';
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
