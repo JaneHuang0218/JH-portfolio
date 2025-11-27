@@ -3,186 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>LEVEL 50: MOBILE OPTIMIZED</title>
+    <title>LEVEL 52: CINEMATIC VIEW</title>
     <style>
-        /* Junni 風格：極簡黑白 */
+        /* 全局設定 */
         body { 
             margin: 0; overflow: hidden; background-color: #000; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
-            user-select: none; -webkit-user-select: none; letter-spacing: 1px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-weight: 300; letter-spacing: 1px;
+            user-select: none; -webkit-user-select: none;
+        }
+
+        /* --- [新增] 電影感暗角濾鏡 (效能極佳的視覺作弊) --- */
+        #cinematic-vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 800; pointer-events: none; /* 讓滑鼠穿透 */
+            /* 放射狀漸層：中間透明 -> 四周變黑 */
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+            /* 如果想要四周有點模糊感，可以加這行 (有些手機可能不支援) */
+            /* backdrop-filter: blur(1px); */ 
         }
         
+        /* Loading */
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 999;
+            background: #0a0a0a; z-index: 999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.8s ease-out;
         }
-        #loading-text { color: #fff; font-size: 14px; margin-bottom: 30px; text-transform: uppercase; opacity: 0.7; }
+        #loading-text { 
+            color: #fff; font-size: 12px; margin-bottom: 40px; 
+            letter-spacing: 3px; text-transform: uppercase; opacity: 0.6;
+        }
         #start-btn {
-            padding: 12px 40px; font-size: 14px; background: transparent; 
-            color: #fff; border: 1px solid #fff; cursor: pointer; 
-            transition: all 0.3s ease; display: none; text-transform: uppercase; letter-spacing: 2px;
+            padding: 15px 60px; font-size: 12px; background: transparent; 
+            color: #fff; border: 1px solid rgba(255,255,255,0.3); cursor: pointer; 
+            transition: all 0.4s ease; display: none; 
+            text-transform: uppercase; letter-spacing: 2px;
         }
-        #start-btn:hover { background: #fff; color: #000; }
+        #start-btn:hover { border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        /* --- 手機專屬按鈕 (Mobile UI) --- */
-        .mobile-btn {
-            position: absolute; z-index: 1200; 
-            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.5);
-            color: white; padding: 15px 25px; border-radius: 30px;
-            font-size: 14px; font-weight: bold; pointer-events: auto;
-            display: none; /* 預設隱藏，有互動才顯示 */
-            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            touch-action: manipulation;
-        }
-        .mobile-btn:active { background: rgba(255, 255, 255, 0.8); color: black; }
-
-        /* 互動按鈕 (右下) */
-        #btn-interact { bottom: 80px; right: 30px; border-color: cyan; color: cyan; }
-        /* 離開/站起按鈕 (中下) */
-        #btn-exit { bottom: 80px; left: 50%; transform: translateX(-50%); border-color: #ff5555; color: #ff5555; }
-
-        /* 檢視模式 UI */
+        /* 檢視 UI */
         #inspect-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: transparent; 
-            z-index: 1500; display: none; pointer-events: none; 
+            z-index: 1500; display: none; 
         }
         #inspect-info {
-            position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
-            width: 300px; text-align: left; color: white; pointer-events: auto;
+            position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 600px; text-align: center; color: white; pointer-events: none;
         }
         #inspect-title {
-            font-size: 32px; font-weight: 300; color: #fff; margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 15px;
-            text-transform: uppercase; letter-spacing: 3px;
+            font-size: 24px; font-weight: 400; color: #fff; margin-bottom: 10px;
+            letter-spacing: 3px; text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
         #inspect-desc { 
-            font-size: 14px; line-height: 2.0; color: rgba(255,255,255,0.8); margin-bottom: 30px; 
-            font-weight: 300;
+            font-size: 13px; line-height: 1.8; color: rgba(255,255,255,0.8); 
+            font-weight: 300; max-width: 400px; margin: 0 auto;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.8);
         }
         #inspect-hint {
-            font-size: 12px; color: rgba(255,255,255,0.5); 
-            border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; 
-            display: inline-block; text-transform: uppercase;
+            margin-top: 20px; font-size: 10px; color: rgba(255,255,255,0.5); 
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
+        /* 電視容器 */
         #screen-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 70%; height: 60%; z-index: 800; display: none;
-            background: #000; border: 1px solid #333;
+            width: 80%; height: 70%; z-index: 1600; display: none;
+            background: #000; border: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
         }
         #game-frame { width: 100%; height: 100%; border: none; }
         
-        /* PC 版提示 */
-        #exit-hint {
-            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
-            color: rgba(255,255,255,0.8); font-size: 12px; letter-spacing: 1px;
-            display: none; pointer-events: none; z-index: 900;
-            text-transform: uppercase;
-        }
-
+        /* 音樂按鈕 */
         #music-btn {
-            position: absolute; top: 30px; right: 30px; z-index: 900;
-            background: transparent; border: 1px solid rgba(255,255,255,0.3); 
-            color: rgba(255,255,255,0.8);
-            padding: 8px 20px; border-radius: 50px; cursor: pointer;
-            font-size: 12px; transition: 0.3s; letter-spacing: 1px;
+            position: absolute; top: 30px; right: 30px; z-index: 1200;
+            background: transparent; border: none; 
+            color: rgba(255,255,255,0.4);
+            cursor: pointer; font-size: 10px; letter-spacing: 2px;
+            transition: 0.3s; text-transform: uppercase;
         }
-        #music-btn:hover { border-color: #fff; color: #fff; }
+        #music-btn:hover { color: #fff; }
 
+        /* 準心 */
         #crosshair {
             position: absolute; top: 50%; left: 50%;
-            width: 8px; height: 8px; 
-            border: 1px solid rgba(255,255,255,0.8);
+            width: 4px; height: 4px; background: rgba(255,255,255,0.8);
             border-radius: 50%; transform: translate(-50%, -50%);
-            z-index: 50; pointer-events: none;
-            transition: 0.3s ease;
+            z-index: 1100; pointer-events: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
         }
         
-        #interact-hint {
-            position: absolute; top: 54%; left: 50%; transform: translateX(-50%);
-            color: rgba(255,255,255,0.9); font-size: 12px; pointer-events: none;
-            display: none; letter-spacing: 1px; font-weight: 300;
+        /* 互動提示 */
+        #interact-label {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(15px, -50%);
+            color: rgba(255,255,255,0.9); font-size: 10px; pointer-events: none;
+            display: none; letter-spacing: 1px; font-weight: 400;
+            text-transform: uppercase;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            z-index: 1100;
         }
 
-        /* 坐下提示 (PC) */
-        #sit-hint {
-            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
-            color: #fff; font-size: 14px; display: none;
-            background: rgba(0,0,0,0.8); padding: 10px 20px; 
-            letter-spacing: 2px; font-weight: 300;
+        /* 狀態提示 (站起/退出) */
+        #status-hint {
+            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.6); font-size: 11px; letter-spacing: 2px;
+            display: none; pointer-events: none; z-index: 1100;
+            text-transform: uppercase; 
         }
 
-        #ui-layer { position: absolute; top: 30px; left: 30px; pointer-events: none; color: white; }
-        .brand { font-size: 16px; font-weight: 400; letter-spacing: 2px; margin-bottom: 8px; }
-        .instruction { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
-        
-        /* 搖桿位置 */
-        #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px; z-index: 10; }
-        /* 視角觸控區 (右半邊) */
-        #touch-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 9; }
+        /* 品牌 */
+        #brand-logo {
+            position: absolute; top: 30px; left: 30px; 
+            font-size: 12px; color: rgba(255,255,255,0.5); 
+            letter-spacing: 3px; pointer-events: none; z-index: 1100;
+        }
+
+        /* 手機按鈕 */
+        .mobile-btn {
+            position: absolute; z-index: 1300; 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; width: 50px; height: 50px; border-radius: 50%;
+            font-size: 18px; display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            display: none; touch-action: manipulation;
+        }
+        .mobile-btn:active { background: rgba(255, 255, 255, 0.4); }
+
+        #btn-interact { bottom: 60px; right: 30px; }
+        #btn-crouch { bottom: 60px; left: 20px; font-size: 16px; }
+        #btn-exit { top: 30px; left: 30px; width: 40px; height: 40px; font-size: 14px; }
+
+        #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px; z-index: 1000; }
+        #touch-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 900; }
 
         #error-msg {
             position: absolute; bottom: 10px; left: 10px; color: #ff5555; background: rgba(0,0,0,0.8);
-            padding: 10px; display: none; max-width: 90%; z-index: 1000; border-left: 2px solid red;
+            padding: 10px; display: none; max-width: 90%; z-index: 2000; border-left: 2px solid red;
         }
         
-        /* 手機版排版調整 */
         @media (max-width: 768px) { 
             #joystick-zone { bottom: 30px; left: 20px; width: 120px; height: 120px; } 
-            #inspect-info { width: 80%; right: auto; left: 10%; top: 60%; }
-            #inspect-title { font-size: 24px; }
-            #ui-layer { display: none; } /* 手機隱藏左上說明，太擠 */
+            #brand-logo, #music-btn { display: none; } 
+            #btn-crouch { display: flex; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 音樂 -->
     <audio id="bgm" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
+    <!-- 載入畫面 -->
     <div id="loading-screen">
-        <div id="loading-text">LOADING EXPERIENCE...</div>
+        <div id="loading-text">LOADING SPACE</div>
         <button id="start-btn">ENTER</button>
     </div>
 
+    <!-- 電影感濾鏡 (Vignette) -->
+    <div id="cinematic-vignette"></div>
+
+    <!-- 電視畫面 -->
     <div id="screen-overlay">
         <iframe id="game-frame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
-    <!-- 檢視 UI -->
+    <!-- 檢視資訊 -->
     <div id="inspect-overlay">
         <div id="inspect-info">
             <div id="inspect-title">Title</div>
-            <div id="inspect-desc">Description content here.</div>
-            <!-- 手機版不需要這個提示，因為有按鈕 -->
-            <div id="inspect-hint" class="desktop-only">SPACE to close</div>
+            <div id="inspect-desc">Description content.</div>
+            <div id="inspect-hint">DRAG TO ROTATE</div>
         </div>
     </div>
 
-    <!-- 手機專屬按鈕 -->
-    <div id="btn-interact" class="mobile-btn">👋 INTERACT</div>
-    <div id="btn-exit" class="mobile-btn">❌ EXIT</div>
+    <!-- UI 元件 -->
+    <div id="btn-interact" class="mobile-btn">●</div>
+    <div id="btn-crouch" class="mobile-btn">⬇</div>
+    <div id="btn-exit" class="mobile-btn">✕</div>
 
-    <div id="music-btn">MUSIC ON</div>
+    <div id="brand-logo">PORTFOLIO</div>
+    <button id="music-btn">SOUND OFF</button>
     <div id="error-msg"></div>
     
     <div id="crosshair"></div>
-    <div id="interact-hint"></div> <!-- PC 提示 -->
-    <div id="exit-hint">PRESS [SPACE] TO LEAVE</div> <!-- PC 提示 -->
-    <div id="sit-hint">PRESS [SPACE] TO STAND UP</div> <!-- PC 提示 -->
-
-    <div id="ui-layer">
-        <div class="brand">PORTFOLIO</div>
-        <div class="instruction">PC: WASD / Space</div>
-    </div>
+    <div id="interact-label"></div>
+    <div id="status-hint"></div>
 
     <div id="joystick-zone"></div>
     <div id="touch-look-zone"></div>
 
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
-
     <script type="importmap">
         {
             "imports": {
@@ -208,7 +224,7 @@
             "coffee_cup": { 
                 type: "inspect", 
                 title: "Coffee Break", 
-                desc: "A moment of peace.",
+                desc: "A cup of freshly brewed coffee.",
                 inspectRotation: { x: 0.5, y: 0, z: 0 } 
             },
             "sofa": { type: "sit", rotation: 270 }, 
@@ -220,8 +236,11 @@
         const ROOM_SCALE = 1.0; 
         const moveSpeed = 4.0;     
         const sprintSpeed = 8.0;
-        const baseHeight = 1.7;
-        const sitHeight = 0.8;      
+        
+        // --- [關鍵修正] 身高設定 ---
+        const standHeight = 1.7; // 正常人眼高度
+        const crouchHeight = 1.0; 
+        const sitHeight = 0.8;    
 
         // ==========================================
 
@@ -248,9 +267,10 @@
         const bobAmplitude = 0.10;   
 
         let controlState = "move"; 
-        let currentCamHeight = baseHeight;
-        
-        // 互動目標
+        let currentCamHeight = standHeight;
+        let targetHeight = standHeight;
+        let isCrouching = false;
+
         let hoverConfig = null;
         let hoverRoot = null;
         let hoverPoint = null;
@@ -260,14 +280,20 @@
         let direction = new THREE.Vector3();
         let touchLastX = 0;
         let touchLastY = 0;
+        
+        // 檢視模式拖曳
+        let isDragging = false;
+        let dragLastX = 0;
+        let dragLastY = 0;
 
         let isMusicPlaying = false;
         const bgm = document.getElementById('bgm');
         const musicBtn = document.getElementById('music-btn');
-
-        // --- 按鈕參考 ---
+        
         const btnInteract = document.getElementById('btn-interact');
+        const btnCrouch = document.getElementById('btn-crouch');
         const btnExit = document.getElementById('btn-exit');
+        const statusHint = document.getElementById('status-hint');
 
         musicBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -278,12 +304,12 @@
             if (isMusicPlaying) {
                 bgm.pause();
                 isMusicPlaying = false;
-                musicBtn.innerText = "MUSIC OFF";
+                musicBtn.innerText = "SOUND OFF";
                 musicBtn.style.opacity = "0.5";
             } else {
                 bgm.play().catch(e => console.log("No music"));
                 isMusicPlaying = true;
-                musicBtn.innerText = "MUSIC ON";
+                musicBtn.innerText = "SOUND ON";
                 musicBtn.style.opacity = "1.0";
             }
         }
@@ -299,21 +325,27 @@
                 studioPivot = null;
             }
 
-            document.getElementById('exit-hint').style.display = 'none';
-            document.getElementById('sit-hint').style.display = 'none';
+            statusHint.style.display = 'none';
             document.getElementById('crosshair').style.display = 'block';
             
-            // 手機按鈕處理
-            btnExit.style.display = 'none'; // 隱藏離開按鈕
+            btnExit.style.display = 'none';
+            if(window.innerWidth <= 768) btnCrouch.style.display = 'flex';
 
             if(controlState === "watch" && musicBtn.innerText.includes("ON")) {
                 bgm.play().catch(()=>{});
             }
 
             controlState = "move";
-            currentCamHeight = baseHeight; 
+            isCrouching = false;
+            targetHeight = standHeight; 
 
             lockPointer();
+        }
+
+        function toggleCrouch() {
+            if (controlState !== "move") return;
+            isCrouching = !isCrouching;
+            targetHeight = isCrouching ? crouchHeight : standHeight;
         }
 
         document.getElementById('start-btn').addEventListener('click', () => {
@@ -322,28 +354,36 @@
             setTimeout(() => { screen.style.display = 'none'; isGameActive = true; }, 800);
             
             bgm.volume = 0.5;
-            bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
+            bgm.play().then(() => { isMusicPlaying = true; musicBtn.innerText = "SOUND ON"; musicBtn.style.opacity = "1"; }).catch(() => {});
             lockPointer();
         });
 
-        // --- 手機互動按鈕監聽 ---
         btnInteract.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // 防止觸發點擊穿透
-            if (controlState === "move" && hoverConfig && hoverRoot) {
-                handleInteraction(hoverRoot, hoverConfig);
-            }
+            e.preventDefault(); e.stopPropagation();
+            if (controlState === "move" && hoverConfig && hoverRoot) handleInteraction(hoverRoot, hoverConfig);
+        });
+        
+        btnCrouch.addEventListener('touchstart', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            toggleCrouch();
         });
 
         btnExit.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            e.preventDefault(); e.stopPropagation();
             if (controlState !== "move") exitInteraction();
         });
 
-        // --- PC 滑鼠點擊 (只負責鎖定 + 互動) ---
         document.body.addEventListener('mousedown', (e) => {
-            if (!isGameActive || e.target.id === 'music-btn' || e.target.classList.contains('mobile-btn')) return;
+            if (!isGameActive || e.target.tagName === 'BUTTON' || e.target.classList.contains('mobile-btn')) return;
 
             if (e.button === 0) {
+                if (controlState === "inspect") {
+                    isDragging = true;
+                    dragLastX = e.clientX;
+                    dragLastY = e.clientY;
+                    return;
+                }
+
                 if (document.pointerLockElement !== document.body && controlState === "move") {
                     lockPointer();
                     return;
@@ -355,10 +395,24 @@
             }
         });
 
+        document.body.addEventListener('mousemove', (e) => {
+            if (controlState === "inspect" && isDragging && studioPivot) {
+                const deltaX = e.clientX - dragLastX;
+                const deltaY = e.clientY - dragLastY;
+                studioPivot.rotation.y += deltaX * 0.01;
+                studioPivot.rotation.x += deltaY * 0.01;
+                dragLastX = e.clientX;
+                dragLastY = e.clientY;
+            }
+            else if (document.pointerLockElement === document.body && controlState === "move") {
+                rotateCamera(e.movementX, e.movementY);
+            }
+        });
+
+        document.body.addEventListener('mouseup', () => { isDragging = false; });
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         function lockPointer() {
-            // 手機不需要 pointerLock，只在 PC 執行
             if (!('ontouchstart' in window)) {
                 document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
                 document.body.requestPointerLock();
@@ -373,38 +427,26 @@
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); 
             camera.rotation.order = 'YXZ'; 
 
-            // 攝影棚
             sceneStudio = new THREE.Scene();
-            const bgGeo = new THREE.PlaneGeometry(20, 20);
-            const bgMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, depthTest: false });
-            const studioBg = new THREE.Mesh(bgGeo, bgMat);
-            studioBg.position.set(0, 0, -10); 
-            studioBg.renderOrder = -1; 
+            // Studio 不設背景，由 CSS #cinematic-vignette 和全域黑色處理
             
             cameraStudio = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
             cameraStudio.position.set(0, 0, 2);
             sceneStudio.add(cameraStudio);
-            cameraStudio.add(studioBg);
 
-            const studioAmbient = new THREE.AmbientLight(0xffffff, 1.2);
-            sceneStudio.add(studioAmbient);
-            const studioDir = new THREE.DirectionalLight(0xffffff, 1.5);
-            studioDir.position.set(2, 2, 5);
-            sceneStudio.add(studioDir);
-            const studioBack = new THREE.DirectionalLight(0xffffff, 0.8);
-            studioBack.position.set(-2, 0, -5); 
-            sceneStudio.add(studioBack);
+            const lightKey = new THREE.DirectionalLight(0xffffff, 1.5);
+            lightKey.position.set(2, 2, 5);
+            sceneStudio.add(lightKey);
+            const lightFill = new THREE.DirectionalLight(0xffffff, 0.8);
+            lightFill.position.set(-2, 0, 5);
+            sceneStudio.add(lightFill);
+            const lightRim = new THREE.DirectionalLight(0xffffff, 1.0);
+            lightRim.position.set(0, 5, -5);
+            sceneStudio.add(lightRim);
 
-            // --- [效能優化關鍵] ---
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: false, // 關閉原生抗鋸齒 (因為用了 Composer)
-                powerPreference: "high-performance" // 請求高性能
-            });
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            
-            // [關鍵] 限制 PixelRatio，避免手機跑 3x 解析度導致卡頓
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
-            
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.useLegacyLights = false;
             renderer.toneMapping = THREE.ACESFilmicToneMapping; 
             renderer.toneMappingExposure = 0.9; 
@@ -443,7 +485,6 @@
             scene.add(camera);
 
             const loader = new GLTFLoader();
-            // Draco 解碼
             const dracoLoader = new DRACOLoader();
             dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
             loader.setDRACOLoader(dracoLoader);
@@ -474,8 +515,7 @@
                 loadingText.innerText = "READY";
                 startBtn.style.display = "block";
             }, undefined, function(err) {
-                showError("Failed to load room.glb.");
-                console.error(err);
+                showError("Failed to load room.glb");
             });
 
             const pGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6); 
@@ -485,14 +525,26 @@
             scene.add(player);
 
             clock = new THREE.Clock();
-            document.addEventListener('mousemove', onMouseMove);
             
+            const joystickManager = nipplejs.create({
+                zone: document.getElementById('joystick-zone'),
+                mode: 'static', position: { left: '50%', top: '50%' }, color: 'white'
+            });
+            let joystickVector = { x: 0, y: 0 };
+            joystickManager.on('move', (evt, data) => {
+                if (data.vector) { joystickVector.x = data.vector.x; joystickVector.y = data.vector.y; }
+            });
+            joystickManager.on('end', () => { joystickVector.x = 0; joystickVector.y = 0; });
+
             const touchZone = document.getElementById('touch-look-zone');
+            let touchLastX = 0;
+            let touchLastY = 0;
             touchZone.addEventListener('touchstart', (e) => {
                 touchLastX = e.touches[0].clientX;
                 touchLastY = e.touches[0].clientY;
             });
             touchZone.addEventListener('touchmove', (e) => {
+                if (controlState !== "move") return;
                 const touchX = e.touches[0].clientX;
                 const touchY = e.touches[0].clientY;
                 const deltaX = touchX - touchLastX;
@@ -503,12 +555,6 @@
             });
 
             animate();
-        }
-
-        function onMouseMove(event) {
-            if (document.pointerLockElement === document.body && controlState === "move") {
-                rotateCamera(event.movementX, event.movementY);
-            }
         }
 
         function rotateCamera(moveX, moveY) {
@@ -532,9 +578,9 @@
         }
 
         function handleInteraction(object, config) {
-            // 隱藏手機互動按鈕，顯示離開按鈕
             btnInteract.style.display = 'none';
-            btnExit.style.display = 'block';
+            btnCrouch.style.display = 'none';
+            btnExit.style.display = 'flex';
 
             if (config.type === "sit") {
                 controlState = "sit";
@@ -543,13 +589,12 @@
                 player.position.z = intersectPoint.z;
                 cameraYaw = (config.rotation * Math.PI) / 180;
                 cameraPitch = 0; 
-                
-                // PC 提示
-                document.getElementById('exit-hint').style.display = 'block';
-                document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO STAND UP";
-                
+                targetHeight = sitHeight;
+
+                statusHint.style.display = 'block';
+                statusHint.innerText = "SPACE TO STAND UP";
                 document.getElementById('crosshair').style.display = 'none';
-                document.getElementById('interact-hint').style.display = 'none';
+                document.getElementById('interact-label').style.display = 'none';
             }
             else if (config.type === "tv" || config.type === "view") {
                 controlState = "watch";
@@ -567,14 +612,14 @@
                     screen.style.display = 'block';
                     if (isMusicPlaying) bgm.pause(); 
                 }
-                document.getElementById('exit-hint').style.display = 'block';
-                document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO EXIT";
+                statusHint.style.display = 'block';
+                statusHint.innerText = "SPACE TO EXIT";
                 document.getElementById('crosshair').style.display = 'none';
-                document.getElementById('interact-hint').style.display = 'none';
+                document.getElementById('interact-label').style.display = 'none';
             }
-            
             else if (config.type === "inspect") {
                 controlState = "inspect";
+                document.exitPointerLock();
                 
                 studioObject = object.clone();
                 studioObject.scale.set(1, 1, 1);
@@ -619,7 +664,7 @@
                 document.getElementById('inspect-desc').innerText = config.desc;
                 document.getElementById('inspect-overlay').style.display = 'block';
                 document.getElementById('crosshair').style.display = 'none';
-                document.getElementById('interact-hint').style.display = 'none';
+                document.getElementById('interact-label').style.display = 'none';
             }
         }
 
@@ -641,7 +686,7 @@
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const intersects = raycaster.intersectObjects(collisionObjects, true);
             const crosshair = document.getElementById('crosshair');
-            const hint = document.getElementById('interact-hint');
+            const label = document.getElementById('interact-label');
 
             if (intersects.length > 0) {
                 const dist = intersects[0].distance;
@@ -653,22 +698,18 @@
                         hoverRoot = result.root;   
                         hoverPoint = intersects[0].point;
 
-                        crosshair.style.backgroundColor = "lime";
-                        crosshair.style.width = "10px";
-                        crosshair.style.height = "10px";
-                        hint.style.display = "block";
-                        hint.style.color = (hoverConfig.type === "inspect") ? "#ff00ff" : "cyan";
+                        crosshair.style.transform = "translate(-50%, -50%) scale(2)";
+                        crosshair.style.backgroundColor = "#fff";
                         
+                        label.style.display = "block";
                         let actionText = "INTERACT";
                         if(hoverConfig.type === "sit") actionText = "SIT";
                         else if(hoverConfig.type === "tv") actionText = "WATCH";
                         else if(hoverConfig.type === "inspect") actionText = "INSPECT";
-                        
-                        hint.innerText = `[L-CLICK] ${actionText}`;
+                        label.innerText = actionText;
 
-                        // 手機顯示按鈕
-                        btnInteract.style.display = "block";
-                        btnInteract.innerText = "👋 " + actionText;
+                        btnInteract.style.display = "flex";
+                        btnInteract.innerText = "👋";
 
                     } else {
                         hoverConfig = null;
@@ -686,19 +727,18 @@
 
         function resetCrosshair() {
             const crosshair = document.getElementById('crosshair');
-            const hint = document.getElementById('interact-hint');
-            crosshair.style.backgroundColor = "transparent";
-            crosshair.style.width = "8px";
-            crosshair.style.height = "8px";
-            crosshair.style.border = "1px solid rgba(255,255,255,0.8)";
-            hint.style.display = "none";
-            btnInteract.style.display = "none"; // 手機隱藏
+            const label = document.getElementById('interact-label');
+            crosshair.style.transform = "translate(-50%, -50%) scale(1)";
+            crosshair.style.backgroundColor = "rgba(255,255,255,0.8)";
+            label.style.display = "none";
+            btnInteract.style.display = "none";
         }
 
         window.addEventListener('keydown', (e) => {
             keysPressed[e.code] = true;
             if (e.code === 'Space') {
-                if (controlState !== "move") exitInteraction();
+                if (controlState === "move") toggleCrouch();
+                else exitInteraction();
             }
         });
         window.addEventListener('keyup', (e) => keysPressed[e.code] = false);
@@ -723,10 +763,12 @@
             composer.render();
 
             if (controlState === "inspect" && studioPivot) {
-                studioPivot.rotation.y += 0.5 * dt; 
                 renderer.clearDepth(); 
                 renderer.render(sceneStudio, cameraStudio);
             }
+
+            currentCamHeight = THREE.MathUtils.lerp(currentCamHeight, targetHeight, 0.1);
+            camera.position.y = currentCamHeight;
 
             if (controlState === "move") {
                 checkInteraction();
@@ -742,7 +784,8 @@
                 if (joystickVector.y !== 0) moveForward = joystickVector.y;
                 if (joystickVector.x !== 0) moveRight = joystickVector.x;
 
-                const currentSpeed = keysPressed['ShiftLeft'] ? sprintSpeed : moveSpeed;
+                let speed = isCrouching ? moveSpeed * 0.5 : moveSpeed;
+                if (keysPressed['ShiftLeft'] && !isCrouching) speed = sprintSpeed;
 
                 direction.set(0, 0, 0);
                 const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
@@ -753,41 +796,22 @@
 
                 direction.normalize(); 
 
-                let isMoving = (moveForward !== 0 || moveRight !== 0);
-
-                if (isMoving) {
-                    const moveDist = currentSpeed * dt;
+                if (moveForward !== 0 || moveRight !== 0) {
+                    const moveDist = speed * dt;
                     const nextPos = player.position.clone().add(direction.clone().multiplyScalar(moveDist));
                     if (!checkCollision(nextPos)) {
                         player.position.copy(nextPos);
                     }
                 }
 
-                let bobOffset = 0;
-                if (isMoving) {
-                    const bobFreq = keysPressed['ShiftLeft'] ? 15 : bobFrequency; 
-                    const bobAmp = keysPressed['ShiftLeft'] ? 0.2 : bobAmplitude; 
-                    bobOffset = Math.sin(clock.elapsedTime * bobFreq) * bobAmp;
-                } else {
-                    bobOffset = THREE.MathUtils.lerp(0, 0, 0.1);
-                }
-
-                const targetCamY = player.position.y + baseHeight + bobOffset;
-                currentCamHeight = THREE.MathUtils.lerp(currentCamHeight, targetCamY, 0.1);
-
                 camera.position.x = player.position.x;
                 camera.position.z = player.position.z;
-                camera.position.y = currentCamHeight;
-                
                 camera.rotation.x = cameraPitch;
                 camera.rotation.y = cameraYaw;
             } 
             else if (controlState === "sit") {
-                const targetCamY = player.position.y + sitHeight;
-                currentCamHeight = THREE.MathUtils.lerp(currentCamHeight, targetCamY, 0.05);
                 camera.position.x = player.position.x;
                 camera.position.z = player.position.z;
-                camera.position.y = currentCamHeight;
                 camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, cameraYaw, 0.1);
                 camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, 0, 0.1);
             }
