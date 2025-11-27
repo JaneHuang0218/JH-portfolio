@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>LEVEL 49: COMPRESSED MODEL SUPPORT</title>
+    <title>LEVEL 50: MOBILE OPTIMIZED</title>
     <style>
         /* Junni 風格：極簡黑白 */
         body { 
             margin: 0; overflow: hidden; background-color: #000; 
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
-            user-select: none; letter-spacing: 1px;
+            user-select: none; -webkit-user-select: none; letter-spacing: 1px;
         }
         
         #loading-screen {
@@ -26,6 +26,24 @@
         }
         #start-btn:hover { background: #fff; color: #000; }
 
+        /* --- 手機專屬按鈕 (Mobile UI) --- */
+        .mobile-btn {
+            position: absolute; z-index: 1200; 
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.5);
+            color: white; padding: 15px 25px; border-radius: 30px;
+            font-size: 14px; font-weight: bold; pointer-events: auto;
+            display: none; /* 預設隱藏，有互動才顯示 */
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            touch-action: manipulation;
+        }
+        .mobile-btn:active { background: rgba(255, 255, 255, 0.8); color: black; }
+
+        /* 互動按鈕 (右下) */
+        #btn-interact { bottom: 80px; right: 30px; border-color: cyan; color: cyan; }
+        /* 離開/站起按鈕 (中下) */
+        #btn-exit { bottom: 80px; left: 50%; transform: translateX(-50%); border-color: #ff5555; color: #ff5555; }
+
+        /* 檢視模式 UI */
         #inspect-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: transparent; 
@@ -57,6 +75,7 @@
         }
         #game-frame { width: 100%; height: 100%; border: none; }
         
+        /* PC 版提示 */
         #exit-hint {
             position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
             color: rgba(255,255,255,0.8); font-size: 12px; letter-spacing: 1px;
@@ -88,6 +107,7 @@
             display: none; letter-spacing: 1px; font-weight: 300;
         }
 
+        /* 坐下提示 (PC) */
         #sit-hint {
             position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
             color: #fff; font-size: 14px; display: none;
@@ -99,7 +119,9 @@
         .brand { font-size: 16px; font-weight: 400; letter-spacing: 2px; margin-bottom: 8px; }
         .instruction { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
         
+        /* 搖桿位置 */
         #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px; z-index: 10; }
+        /* 視角觸控區 (右半邊) */
         #touch-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 9; }
 
         #error-msg {
@@ -107,7 +129,13 @@
             padding: 10px; display: none; max-width: 90%; z-index: 1000; border-left: 2px solid red;
         }
         
-        @media (max-width: 768px) { #joystick-zone { bottom: 30px; left: 30px; } }
+        /* 手機版排版調整 */
+        @media (max-width: 768px) { 
+            #joystick-zone { bottom: 30px; left: 20px; width: 120px; height: 120px; } 
+            #inspect-info { width: 80%; right: auto; left: 10%; top: 60%; }
+            #inspect-title { font-size: 24px; }
+            #ui-layer { display: none; } /* 手機隱藏左上說明，太擠 */
+        }
     </style>
 </head>
 <body>
@@ -115,34 +143,39 @@
     <audio id="bgm" loop><source src="music.mp3" type="audio/mpeg"></audio>
 
     <div id="loading-screen">
-        <div id="loading-text">LOADING...</div>
-        <button id="start-btn">ENTER SPACE</button>
+        <div id="loading-text">LOADING EXPERIENCE...</div>
+        <button id="start-btn">ENTER</button>
     </div>
 
     <div id="screen-overlay">
         <iframe id="game-frame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
+    <!-- 檢視 UI -->
     <div id="inspect-overlay">
         <div id="inspect-info">
             <div id="inspect-title">Title</div>
             <div id="inspect-desc">Description content here.</div>
-            <div id="inspect-hint">SPACE to close</div>
+            <!-- 手機版不需要這個提示，因為有按鈕 -->
+            <div id="inspect-hint" class="desktop-only">SPACE to close</div>
         </div>
     </div>
+
+    <!-- 手機專屬按鈕 -->
+    <div id="btn-interact" class="mobile-btn">👋 INTERACT</div>
+    <div id="btn-exit" class="mobile-btn">❌ EXIT</div>
 
     <div id="music-btn">MUSIC ON</div>
     <div id="error-msg"></div>
     
     <div id="crosshair"></div>
-    <div id="interact-hint"></div>
-    <div id="exit-hint">PRESS [SPACE] TO LEAVE</div>
-    <div id="sit-hint">PRESS [SPACE] TO STAND UP</div>
+    <div id="interact-hint"></div> <!-- PC 提示 -->
+    <div id="exit-hint">PRESS [SPACE] TO LEAVE</div> <!-- PC 提示 -->
+    <div id="sit-hint">PRESS [SPACE] TO STAND UP</div> <!-- PC 提示 -->
 
     <div id="ui-layer">
         <div class="brand">PORTFOLIO</div>
-        <div class="instruction">Move: WASD / Shift</div>
-        <div class="instruction">Interact: Left Click / Space</div>
+        <div class="instruction">PC: WASD / Space</div>
     </div>
 
     <div id="joystick-zone"></div>
@@ -162,10 +195,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        
-        // --- [關鍵新增] 引入 DracoLoader ---
         import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-        
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -178,7 +208,7 @@
             "coffee_cup": { 
                 type: "inspect", 
                 title: "Coffee Break", 
-                desc: "A cup of freshly brewed coffee to start the day.",
+                desc: "A moment of peace.",
                 inspectRotation: { x: 0.5, y: 0, z: 0 } 
             },
             "sofa": { type: "sit", rotation: 270 }, 
@@ -187,7 +217,6 @@
             "window": { type: "view" }
         };
 
-        // 房間縮放 (壓縮後的檔案大小不會變，但請確認縮放比例是否需要調整)
         const ROOM_SCALE = 1.0; 
         const moveSpeed = 4.0;     
         const sprintSpeed = 8.0;
@@ -220,6 +249,8 @@
 
         let controlState = "move"; 
         let currentCamHeight = baseHeight;
+        
+        // 互動目標
         let hoverConfig = null;
         let hoverRoot = null;
         let hoverPoint = null;
@@ -233,6 +264,10 @@
         let isMusicPlaying = false;
         const bgm = document.getElementById('bgm');
         const musicBtn = document.getElementById('music-btn');
+
+        // --- 按鈕參考 ---
+        const btnInteract = document.getElementById('btn-interact');
+        const btnExit = document.getElementById('btn-exit');
 
         musicBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
@@ -256,8 +291,8 @@
         function exitInteraction() {
             document.getElementById('screen-overlay').style.display = 'none';
             document.getElementById('game-frame').src = "";
-            
             document.getElementById('inspect-overlay').style.display = 'none';
+            
             if (studioObject) {
                 sceneStudio.remove(studioPivot); 
                 studioObject = null;
@@ -265,11 +300,11 @@
             }
 
             document.getElementById('exit-hint').style.display = 'none';
+            document.getElementById('sit-hint').style.display = 'none';
             document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('crosshair').style.width = '8px';
-            document.getElementById('crosshair').style.height = '8px';
-            document.getElementById('crosshair').style.backgroundColor = 'transparent';
-            document.getElementById('crosshair').style.border = '1px solid rgba(255,255,255,0.8)';
+            
+            // 手機按鈕處理
+            btnExit.style.display = 'none'; // 隱藏離開按鈕
 
             if(controlState === "watch" && musicBtn.innerText.includes("ON")) {
                 bgm.play().catch(()=>{});
@@ -291,8 +326,22 @@
             lockPointer();
         });
 
+        // --- 手機互動按鈕監聽 ---
+        btnInteract.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // 防止觸發點擊穿透
+            if (controlState === "move" && hoverConfig && hoverRoot) {
+                handleInteraction(hoverRoot, hoverConfig);
+            }
+        });
+
+        btnExit.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (controlState !== "move") exitInteraction();
+        });
+
+        // --- PC 滑鼠點擊 (只負責鎖定 + 互動) ---
         document.body.addEventListener('mousedown', (e) => {
-            if (!isGameActive || e.target.id === 'music-btn') return;
+            if (!isGameActive || e.target.id === 'music-btn' || e.target.classList.contains('mobile-btn')) return;
 
             if (e.button === 0) {
                 if (document.pointerLockElement !== document.body && controlState === "move") {
@@ -309,13 +358,12 @@
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         function lockPointer() {
-            document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
-            document.body.requestPointerLock();
+            // 手機不需要 pointerLock，只在 PC 執行
+            if (!('ontouchstart' in window)) {
+                document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
+                document.body.requestPointerLock();
+            }
         }
-
-        document.addEventListener('pointerlockchange', () => {
-            // No pause menu
-        });
 
         function init() {
             scene = new THREE.Scene();
@@ -325,6 +373,7 @@
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); 
             camera.rotation.order = 'YXZ'; 
 
+            // 攝影棚
             sceneStudio = new THREE.Scene();
             const bgGeo = new THREE.PlaneGeometry(20, 20);
             const bgMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, depthTest: false });
@@ -346,9 +395,16 @@
             studioBack.position.set(-2, 0, -5); 
             sceneStudio.add(studioBack);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            // --- [效能優化關鍵] ---
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: false, // 關閉原生抗鋸齒 (因為用了 Composer)
+                powerPreference: "high-performance" // 請求高性能
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            // [關鍵] 限制 PixelRatio，避免手機跑 3x 解析度導致卡頓
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
+            
             renderer.useLegacyLights = false;
             renderer.toneMapping = THREE.ACESFilmicToneMapping; 
             renderer.toneMappingExposure = 0.9; 
@@ -387,13 +443,10 @@
             scene.add(camera);
 
             const loader = new GLTFLoader();
-            
-            // --- [關鍵] 設定 Draco 解碼器路徑 ---
+            // Draco 解碼
             const dracoLoader = new DRACOLoader();
-            // 使用 CDN 載入解碼器，這樣你就不用下載 draco 資料夾了
             dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
             loader.setDRACOLoader(dracoLoader);
-            // ---------------------------------
 
             const loadingText = document.getElementById('loading-text');
             const startBtn = document.getElementById('start-btn');
@@ -421,8 +474,8 @@
                 loadingText.innerText = "READY";
                 startBtn.style.display = "block";
             }, undefined, function(err) {
+                showError("Failed to load room.glb.");
                 console.error(err);
-                showError("Failed to load room.glb. Check console.");
             });
 
             const pGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6); 
@@ -479,6 +532,10 @@
         }
 
         function handleInteraction(object, config) {
+            // 隱藏手機互動按鈕，顯示離開按鈕
+            btnInteract.style.display = 'none';
+            btnExit.style.display = 'block';
+
             if (config.type === "sit") {
                 controlState = "sit";
                 const intersectPoint = raycaster.intersectObject(object, true)[0].point;
@@ -486,14 +543,18 @@
                 player.position.z = intersectPoint.z;
                 cameraYaw = (config.rotation * Math.PI) / 180;
                 cameraPitch = 0; 
+                
+                // PC 提示
                 document.getElementById('exit-hint').style.display = 'block';
                 document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO STAND UP";
+                
                 document.getElementById('crosshair').style.display = 'none';
                 document.getElementById('interact-hint').style.display = 'none';
             }
             else if (config.type === "tv" || config.type === "view") {
                 controlState = "watch";
-                document.exitPointerLock();
+                if (document.pointerLockElement) document.exitPointerLock();
+                
                 const targetPos = new THREE.Vector3();
                 const box = new THREE.Box3().setFromObject(object);
                 const center = box.getCenter(new THREE.Vector3());
@@ -505,7 +566,6 @@
                     iframe.src = config.src;
                     screen.style.display = 'block';
                     if (isMusicPlaying) bgm.pause(); 
-                    document.exitPointerLock();
                 }
                 document.getElementById('exit-hint').style.display = 'block';
                 document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO EXIT";
@@ -593,13 +653,23 @@
                         hoverRoot = result.root;   
                         hoverPoint = intersects[0].point;
 
-                        crosshair.style.width = "20px";
-                        crosshair.style.height = "20px";
-                        crosshair.style.border = "1px solid #fff";
-                        crosshair.style.backgroundColor = "rgba(255,255,255,0.2)";
-                        
+                        crosshair.style.backgroundColor = "lime";
+                        crosshair.style.width = "10px";
+                        crosshair.style.height = "10px";
                         hint.style.display = "block";
-                        hint.innerText = hoverConfig.title || "INTERACT";
+                        hint.style.color = (hoverConfig.type === "inspect") ? "#ff00ff" : "cyan";
+                        
+                        let actionText = "INTERACT";
+                        if(hoverConfig.type === "sit") actionText = "SIT";
+                        else if(hoverConfig.type === "tv") actionText = "WATCH";
+                        else if(hoverConfig.type === "inspect") actionText = "INSPECT";
+                        
+                        hint.innerText = `[L-CLICK] ${actionText}`;
+
+                        // 手機顯示按鈕
+                        btnInteract.style.display = "block";
+                        btnInteract.innerText = "👋 " + actionText;
+
                     } else {
                         hoverConfig = null;
                         resetCrosshair();
@@ -617,11 +687,12 @@
         function resetCrosshair() {
             const crosshair = document.getElementById('crosshair');
             const hint = document.getElementById('interact-hint');
+            crosshair.style.backgroundColor = "transparent";
             crosshair.style.width = "8px";
             crosshair.style.height = "8px";
             crosshair.style.border = "1px solid rgba(255,255,255,0.8)";
-            crosshair.style.backgroundColor = "transparent";
             hint.style.display = "none";
+            btnInteract.style.display = "none"; // 手機隱藏
         }
 
         window.addEventListener('keydown', (e) => {
@@ -652,7 +723,7 @@
             composer.render();
 
             if (controlState === "inspect" && studioPivot) {
-                studioPivot.rotation.y += 0.2 * dt; 
+                studioPivot.rotation.y += 0.5 * dt; 
                 renderer.clearDepth(); 
                 renderer.render(sceneStudio, cameraStudio);
             }
