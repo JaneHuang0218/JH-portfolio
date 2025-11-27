@@ -3,97 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JANE'S UNIVERSE (雙平台完美版)</title>
+    <title>LEVEL 49: COMPRESSED MODEL SUPPORT</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; user-select: none; -webkit-user-select: none; }
+        /* Junni 風格：極簡黑白 */
+        body { 
+            margin: 0; overflow: hidden; background-color: #000; 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
+            user-select: none; letter-spacing: 1px;
+        }
         
-        /* 歡迎畫面 */
-        #start-screen {
+        #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 999;
+            background: #000; z-index: 999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: white; transition: opacity 0.5s;
+            transition: opacity 0.8s ease-out;
         }
+        #loading-text { color: #fff; font-size: 14px; margin-bottom: 30px; text-transform: uppercase; opacity: 0.7; }
         #start-btn {
-            padding: 15px 40px; font-size: 24px; border: 2px solid #00ffff; color: #00ffff;
-            background: transparent; border-radius: 50px; cursor: pointer; margin-top: 30px;
-            box-shadow: 0 0 15px #00ffff; transition: 0.3s;
+            padding: 12px 40px; font-size: 14px; background: transparent; 
+            color: #fff; border: 1px solid #fff; cursor: pointer; 
+            transition: all 0.3s ease; display: none; text-transform: uppercase; letter-spacing: 2px;
         }
-        #start-btn:hover { background: #00ffff; color: black; }
+        #start-btn:hover { background: #fff; color: #000; }
 
-        /* UI */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #inspect-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent; 
+            z-index: 1500; display: none; pointer-events: none; 
+        }
+        #inspect-info {
+            position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+            width: 300px; text-align: left; color: white; pointer-events: auto;
+        }
+        #inspect-title {
+            font-size: 32px; font-weight: 300; color: #fff; margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 15px;
+            text-transform: uppercase; letter-spacing: 3px;
+        }
+        #inspect-desc { 
+            font-size: 14px; line-height: 2.0; color: rgba(255,255,255,0.8); margin-bottom: 30px; 
+            font-weight: 300;
+        }
+        #inspect-hint {
+            font-size: 12px; color: rgba(255,255,255,0.5); 
+            border: 1px solid rgba(255,255,255,0.3); padding: 8px 15px; 
+            display: inline-block; text-transform: uppercase;
+        }
+
+        #screen-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 70%; height: 60%; z-index: 800; display: none;
+            background: #000; border: 1px solid #333;
+        }
+        #game-frame { width: 100%; height: 100%; border: none; }
         
-        .brand-logo {
-            position: absolute; top: 20px; left: 20px;
-            color: white; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px cyan;
-            letter-spacing: 2px;
-        }
-        .controls-hint {
-            position: absolute; bottom: 20px; right: 20px;
-            color: #888; font-size: 14px; text-align: right;
+        #exit-hint {
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.8); font-size: 12px; letter-spacing: 1px;
+            display: none; pointer-events: none; z-index: 900;
+            text-transform: uppercase;
         }
 
-        /* 互動提示 */
-        #interaction-ui {
-            position: absolute; bottom: 180px; width: 100%; text-align: center;
-            display: none; pointer-events: none;
+        #music-btn {
+            position: absolute; top: 30px; right: 30px; z-index: 900;
+            background: transparent; border: 1px solid rgba(255,255,255,0.3); 
+            color: rgba(255,255,255,0.8);
+            padding: 8px 20px; border-radius: 50px; cursor: pointer;
+            font-size: 12px; transition: 0.3s; letter-spacing: 1px;
         }
-        .msg-box {
-            display: inline-block; background: rgba(0, 0, 0, 0.8); color: white;
-            padding: 15px 30px; border-radius: 30px; font-size: 18px;
-            border: 1px solid rgba(0, 255, 255, 0.5);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
+        #music-btn:hover { border-color: #fff; color: #fff; }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 8px; height: 8px; 
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            z-index: 50; pointer-events: none;
+            transition: 0.3s ease;
+        }
+        
+        #interact-hint {
+            position: absolute; top: 54%; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.9); font-size: 12px; pointer-events: none;
+            display: none; letter-spacing: 1px; font-weight: 300;
         }
 
-        /* 搖桿區域 */
-        #joystick-zone {
-            position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px;
-            z-index: 10; pointer-events: auto;
+        #sit-hint {
+            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            color: #fff; font-size: 14px; display: none;
+            background: rgba(0,0,0,0.8); padding: 10px 20px; 
+            letter-spacing: 2px; font-weight: 300;
         }
 
-        @media (max-width: 768px) {
-            .brand-logo { font-size: 18px; }
-            #interaction-ui { bottom: 40%; }
-            #joystick-zone { bottom: 30px; left: 30px; }
-            .controls-hint { display: none; } /* 手機不顯示鍵盤提示 */
+        #ui-layer { position: absolute; top: 30px; left: 30px; pointer-events: none; color: white; }
+        .brand { font-size: 16px; font-weight: 400; letter-spacing: 2px; margin-bottom: 8px; }
+        .instruction { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+        
+        #joystick-zone { position: absolute; bottom: 50px; left: 50px; width: 150px; height: 150px; z-index: 10; }
+        #touch-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 9; }
+
+        #error-msg {
+            position: absolute; bottom: 10px; left: 10px; color: #ff5555; background: rgba(0,0,0,0.8);
+            padding: 10px; display: none; max-width: 90%; z-index: 1000; border-left: 2px solid red;
         }
+        
+        @media (max-width: 768px) { #joystick-zone { bottom: 30px; left: 30px; } }
     </style>
 </head>
 <body>
 
-    <!-- 歡迎畫面 -->
-    <div id="start-screen">
-        <h1 style="text-align: center; margin: 0; font-size: 40px; text-shadow: 0 0 20px cyan;">JANE'S WORLD</h1>
-        <p style="color: #aaa; margin-top: 10px;">Exploring the Digital Universe</p>
-        <button id="start-btn">ENTER WORLD</button>
+    <audio id="bgm" loop><source src="music.mp3" type="audio/mpeg"></audio>
+
+    <div id="loading-screen">
+        <div id="loading-text">LOADING...</div>
+        <button id="start-btn">ENTER SPACE</button>
     </div>
 
-    <!-- UI 層 -->
+    <div id="screen-overlay">
+        <iframe id="game-frame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+
+    <div id="inspect-overlay">
+        <div id="inspect-info">
+            <div id="inspect-title">Title</div>
+            <div id="inspect-desc">Description content here.</div>
+            <div id="inspect-hint">SPACE to close</div>
+        </div>
+    </div>
+
+    <div id="music-btn">MUSIC ON</div>
+    <div id="error-msg"></div>
+    
+    <div id="crosshair"></div>
+    <div id="interact-hint"></div>
+    <div id="exit-hint">PRESS [SPACE] TO LEAVE</div>
+    <div id="sit-hint">PRESS [SPACE] TO STAND UP</div>
+
     <div id="ui-layer">
-        <div class="brand-logo">JANE'S PORTFOLIO</div>
-        <div class="controls-hint">
-            電腦：W A S D 移動 | Enter 互動<br>
-            手機：左側搖桿 | 點擊互動
-        </div>
+        <div class="brand">PORTFOLIO</div>
+        <div class="instruction">Move: WASD / Shift</div>
+        <div class="instruction">Interact: Left Click / Space</div>
     </div>
 
-    <!-- 搖桿區域 -->
     <div id="joystick-zone"></div>
+    <div id="touch-look-zone"></div>
 
-    <!-- 互動提示 -->
-    <div id="interaction-ui">
-        <div class="msg-box">
-            <strong id="portal-title" style="font-size: 22px; color: cyan;">標題</strong><br>
-            <span style="font-size:14px; color:#ffff00; margin-top: 5px; display:block;">點擊 / Enter 進入</span>
-        </div>
-    </div>
-
-    <!-- 搖桿套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
 
-    <!-- Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -106,271 +162,575 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        
+        // --- [關鍵新增] 引入 DracoLoader ---
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- 全域變數 ---
-        let scene, camera, renderer, clock;
-        let player, mixer, actions = {}, activeAction, previousAction;
-        let portals = [];
-        let isGameActive = false;
-
-        // 輸入狀態
-        const inputState = {
-            keyFwd: 0,  // 鍵盤前後
-            keyTurn: 0, // 鍵盤左右
-            joyFwd: 0,  // 搖桿前後
-            joyTurn: 0  // 搖桿左右
+        // ==========================================
+        // 🔥 設定區
+        // ==========================================
+        
+        const INTERACT_CONFIG = {
+            "coffee_cup": { 
+                type: "inspect", 
+                title: "Coffee Break", 
+                desc: "A cup of freshly brewed coffee to start the day.",
+                inspectRotation: { x: 0.5, y: 0, z: 0 } 
+            },
+            "sofa": { type: "sit", rotation: 270 }, 
+            "chair": { type: "sit", rotation: 180 }, 
+            "TV": { type: "tv", src: "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0" },
+            "window": { type: "view" }
         };
 
-        // 1. 啟動按鈕
-        document.getElementById('start-btn').addEventListener('click', () => {
-            const screen = document.getElementById('start-screen');
-            screen.style.opacity = '0';
-            setTimeout(() => {
-                screen.style.display = 'none';
-                isGameActive = true;
-                // 播放背景音樂可以在這裡加入
-            }, 500);
+        // 房間縮放 (壓縮後的檔案大小不會變，但請確認縮放比例是否需要調整)
+        const ROOM_SCALE = 1.0; 
+        const moveSpeed = 4.0;     
+        const sprintSpeed = 8.0;
+        const baseHeight = 1.7;
+        const sitHeight = 0.8;      
+
+        // ==========================================
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.style.display = 'block';
+            el.innerText = msg;
+        }
+
+        let scene, camera, renderer, composer, clock;
+        let sceneStudio, cameraStudio;
+        let studioObject = null;
+        let studioPivot = null; 
+        
+        let player; 
+        let isGameActive = false;
+        
+        let collisionObjects = []; 
+        const raycaster = new THREE.Raycaster();
+        const keysPressed = {};
+
+        const mouseSensitivity = 0.002; 
+        const bobFrequency = 8; 
+        const bobAmplitude = 0.10;   
+
+        let controlState = "move"; 
+        let currentCamHeight = baseHeight;
+        let hoverConfig = null;
+        let hoverRoot = null;
+        let hoverPoint = null;
+
+        let cameraPitch = 0; 
+        let cameraYaw = 0;   
+        let direction = new THREE.Vector3();
+        let touchLastX = 0;
+        let touchLastY = 0;
+
+        let isMusicPlaying = false;
+        const bgm = document.getElementById('bgm');
+        const musicBtn = document.getElementById('music-btn');
+
+        musicBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            toggleMusic();
         });
 
-        // 2. 初始化
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgm.pause();
+                isMusicPlaying = false;
+                musicBtn.innerText = "MUSIC OFF";
+                musicBtn.style.opacity = "0.5";
+            } else {
+                bgm.play().catch(e => console.log("No music"));
+                isMusicPlaying = true;
+                musicBtn.innerText = "MUSIC ON";
+                musicBtn.style.opacity = "1.0";
+            }
+        }
+
+        function exitInteraction() {
+            document.getElementById('screen-overlay').style.display = 'none';
+            document.getElementById('game-frame').src = "";
+            
+            document.getElementById('inspect-overlay').style.display = 'none';
+            if (studioObject) {
+                sceneStudio.remove(studioPivot); 
+                studioObject = null;
+                studioPivot = null;
+            }
+
+            document.getElementById('exit-hint').style.display = 'none';
+            document.getElementById('crosshair').style.display = 'block';
+            document.getElementById('crosshair').style.width = '8px';
+            document.getElementById('crosshair').style.height = '8px';
+            document.getElementById('crosshair').style.backgroundColor = 'transparent';
+            document.getElementById('crosshair').style.border = '1px solid rgba(255,255,255,0.8)';
+
+            if(controlState === "watch" && musicBtn.innerText.includes("ON")) {
+                bgm.play().catch(()=>{});
+            }
+
+            controlState = "move";
+            currentCamHeight = baseHeight; 
+
+            lockPointer();
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const screen = document.getElementById('loading-screen');
+            screen.style.opacity = 0;
+            setTimeout(() => { screen.style.display = 'none'; isGameActive = true; }, 800);
+            
+            bgm.volume = 0.5;
+            bgm.play().then(() => { isMusicPlaying = true; }).catch(() => {});
+            lockPointer();
+        });
+
+        document.body.addEventListener('mousedown', (e) => {
+            if (!isGameActive || e.target.id === 'music-btn') return;
+
+            if (e.button === 0) {
+                if (document.pointerLockElement !== document.body && controlState === "move") {
+                    lockPointer();
+                    return;
+                }
+                
+                if (controlState === "move" && hoverConfig && hoverRoot) {
+                    handleInteraction(hoverRoot, hoverConfig);
+                }
+            }
+        });
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        function lockPointer() {
+            document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
+            document.body.requestPointerLock();
+        }
+
+        document.addEventListener('pointerlockchange', () => {
+            // No pause menu
+        });
+
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050510);
-            scene.fog = new THREE.Fog(0x050510, 10, 90);
+            scene.background = new THREE.Color(0x050505); 
+            scene.fog = new THREE.FogExp2(0x050505, 0.01);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 5, -10);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); 
+            camera.rotation.order = 'YXZ'; 
+
+            sceneStudio = new THREE.Scene();
+            const bgGeo = new THREE.PlaneGeometry(20, 20);
+            const bgMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.8, depthTest: false });
+            const studioBg = new THREE.Mesh(bgGeo, bgMat);
+            studioBg.position.set(0, 0, -10); 
+            studioBg.renderOrder = -1; 
+            
+            cameraStudio = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            cameraStudio.position.set(0, 0, 2);
+            sceneStudio.add(cameraStudio);
+            cameraStudio.add(studioBg);
+
+            const studioAmbient = new THREE.AmbientLight(0xffffff, 1.2);
+            sceneStudio.add(studioAmbient);
+            const studioDir = new THREE.DirectionalLight(0xffffff, 1.5);
+            studioDir.position.set(2, 2, 5);
+            sceneStudio.add(studioDir);
+            const studioBack = new THREE.DirectionalLight(0xffffff, 0.8);
+            studioBack.position.set(-2, 0, -5); 
+            sceneStudio.add(studioBack);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.useLegacyLights = false;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping; 
+            renderer.toneMappingExposure = 0.9; 
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.autoClear = false; 
             document.body.appendChild(renderer.domElement);
 
-            // 燈光
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.9; 
+            bloomPass.strength = 0.2; 
+            bloomPass.radius = 0.1;
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.6);
             hemiLight.position.set(0, 20, 0);
             scene.add(hemiLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-            dirLight.position.set(-3, 10, -10);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
             dirLight.castShadow = true;
             scene.add(dirLight);
 
-            // 地板與網格
-            const ground = new THREE.Mesh(
-                new THREE.PlaneGeometry(200, 200),
-                new THREE.MeshPhongMaterial({ color: 0x111111, depthWrite: false })
-            );
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            scene.add(ground);
+            const playerLight = new THREE.SpotLight(0xffffff, 0.8);
+            playerLight.position.set(0, 0, 0);
+            playerLight.target.position.set(0, 0, -5);
+            playerLight.angle = Math.PI / 5;
+            playerLight.penumbra = 0.5;
+            playerLight.distance = 15; 
+            camera.add(playerLight);
+            camera.add(playerLight.target);
+            scene.add(camera);
 
-            const grid = new THREE.GridHelper(200, 40, 0x00ffff, 0x222222);
-            grid.material.opacity = 0.2;
-            grid.material.transparent = true;
-            scene.add(grid);
-
-            // 星空
-            const starGeo = new THREE.BufferGeometry();
-            const starPos = [];
-            for(let i=0; i<1500; i++) {
-                starPos.push((Math.random() - 0.5) * 200); // x
-                starPos.push(Math.random() * 100);         // y (只在天空)
-                starPos.push((Math.random() - 0.5) * 200); // z
-            }
-            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.3 }));
-            scene.add(stars);
-
-            // 傳送門
-            createPortal(-8, 5, 0xff0080, "Instagram", "https://www.instagram.com");
-            createPortal(0, 15, 0x00ffff, "個人履歷", "https://www.google.com");
-            createPortal(8, 5, 0xffff00, "YouTube", "https://www.youtube.com");
-
-            // 載入機器人
             const loader = new GLTFLoader();
-            loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', function (gltf) {
-                player = gltf.scene;
-                player.scale.set(0.5, 0.5, 0.5);
-                scene.add(player);
+            
+            // --- [關鍵] 設定 Draco 解碼器路徑 ---
+            const dracoLoader = new DRACOLoader();
+            // 使用 CDN 載入解碼器，這樣你就不用下載 draco 資料夾了
+            dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(dracoLoader);
+            // ---------------------------------
 
-                mixer = new THREE.AnimationMixer(player);
-                const anims = gltf.animations;
-                const getClip = (name) => {
-                    const clip = THREE.AnimationClip.findByName(anims, name);
-                    return clip ? mixer.clipAction(clip) : null;
-                };
+            const loadingText = document.getElementById('loading-text');
+            const startBtn = document.getElementById('start-btn');
 
-                actions['Idle'] = getClip('Idle');
-                actions['Walking'] = getClip('Walking');
-                actions['Running'] = getClip('Running');
+            loader.load('./room.glb', function(gltf) {
+                const room = gltf.scene;
+                room.scale.set(ROOM_SCALE, ROOM_SCALE, ROOM_SCALE); 
+                room.position.set(0, 0, 0);
                 
-                activeAction = actions['Idle'];
-                if(activeAction) activeAction.play();
+                room.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        collisionObjects.push(child); 
+                        if(child.material) {
+                            child.material.side = THREE.DoubleSide;
+                            if(child.material.isMeshStandardMaterial) {
+                                child.material.roughness = 0.8; 
+                                child.material.metalness = 0.1;
+                            }
+                        }
+                    }
+                });
+                scene.add(room);
+                loadingText.innerText = "READY";
+                startBtn.style.display = "block";
+            }, undefined, function(err) {
+                console.error(err);
+                showError("Failed to load room.glb. Check console.");
             });
 
+            const pGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6); 
+            const pMat = new THREE.MeshBasicMaterial({ visible: false, wireframe: true }); 
+            player = new THREE.Mesh(pGeo, pMat);
+            player.position.set(0, 2, 0); 
+            scene.add(player);
+
             clock = new THREE.Clock();
+            document.addEventListener('mousemove', onMouseMove);
+            
+            const touchZone = document.getElementById('touch-look-zone');
+            touchZone.addEventListener('touchstart', (e) => {
+                touchLastX = e.touches[0].clientX;
+                touchLastY = e.touches[0].clientY;
+            });
+            touchZone.addEventListener('touchmove', (e) => {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                const deltaX = touchX - touchLastX;
+                const deltaY = touchY - touchLastY;
+                rotateCamera(deltaX * 2, deltaY * 2);
+                touchLastX = touchX;
+                touchLastY = touchY;
+            });
+
             animate();
         }
 
-        function createPortal(x, z, color, title, url) {
-            const group = new THREE.Group();
-            
-            // 光柱
-            const geo = new THREE.BoxGeometry(2, 4, 0.2);
-            const mat = new THREE.MeshPhongMaterial({ color: color, emissive: color, emissiveIntensity: 0.8, transparent: true, opacity: 0.8 });
-            const portal = new THREE.Mesh(geo, mat);
-            portal.position.y = 2;
-            
-            // 地板光圈
-            const ring = new THREE.Mesh(
-                new THREE.RingGeometry(1.5, 2, 32),
-                new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide })
-            );
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.05;
-
-            group.add(portal);
-            group.add(ring);
-            group.position.set(x, 0, z);
-            group.userData = { title, url };
-            
-            scene.add(group);
-            portals.push(group);
+        function onMouseMove(event) {
+            if (document.pointerLockElement === document.body && controlState === "move") {
+                rotateCamera(event.movementX, event.movementY);
+            }
         }
 
-        // 3. 輸入控制系統 (關鍵修復)
-        
-        // A. 鍵盤控制 (使用 e.code 避免輸入法問題)
-        const keysPressed = {};
-        window.addEventListener('keydown', (e) => { keysPressed[e.code] = true; });
-        window.addEventListener('keyup', (e) => { keysPressed[e.code] = false; });
+        function rotateCamera(moveX, moveY) {
+            cameraYaw -= moveX * mouseSensitivity;
+            cameraPitch -= moveY * mouseSensitivity;
+            cameraPitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraPitch));
+            camera.rotation.x = cameraPitch;
+            camera.rotation.y = cameraYaw;
+        }
 
-        // B. 搖桿控制
-        const joystickManager = nipplejs.create({
-            zone: document.getElementById('joystick-zone'),
-            mode: 'static',
-            position: { left: '50%', top: '50%' },
-            color: 'cyan'
-        });
+        function checkCollision(nextPos) {
+            const rayOrigin = nextPos.clone();
+            rayOrigin.y += 0.3; 
+            const dir = nextPos.clone().sub(player.position).normalize();
+            raycaster.set(rayOrigin, dir);
+            const intersects = raycaster.intersectObjects(collisionObjects, true);
+            if (intersects.length > 0 && intersects[0].distance < 0.6) {
+                return true; 
+            }
+            return false;
+        }
 
-        joystickManager.on('move', (evt, data) => {
-            if (data.vector) {
-                inputState.joyFwd = data.vector.y; 
-                inputState.joyTurn = -data.vector.x; 
+        function handleInteraction(object, config) {
+            if (config.type === "sit") {
+                controlState = "sit";
+                const intersectPoint = raycaster.intersectObject(object, true)[0].point;
+                player.position.x = intersectPoint.x;
+                player.position.z = intersectPoint.z;
+                cameraYaw = (config.rotation * Math.PI) / 180;
+                cameraPitch = 0; 
+                document.getElementById('exit-hint').style.display = 'block';
+                document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO STAND UP";
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('interact-hint').style.display = 'none';
+            }
+            else if (config.type === "tv" || config.type === "view") {
+                controlState = "watch";
+                document.exitPointerLock();
+                const targetPos = new THREE.Vector3();
+                const box = new THREE.Box3().setFromObject(object);
+                const center = box.getCenter(new THREE.Vector3());
+                camera.lookAt(center);
+                
+                if (config.type === "tv") {
+                    const screen = document.getElementById('screen-overlay');
+                    const iframe = document.getElementById('game-frame');
+                    iframe.src = config.src;
+                    screen.style.display = 'block';
+                    if (isMusicPlaying) bgm.pause(); 
+                    document.exitPointerLock();
+                }
+                document.getElementById('exit-hint').style.display = 'block';
+                document.getElementById('exit-hint').innerText = "PRESS [SPACE] TO EXIT";
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('interact-hint').style.display = 'none';
+            }
+            
+            else if (config.type === "inspect") {
+                controlState = "inspect";
+                
+                studioObject = object.clone();
+                studioObject.scale.set(1, 1, 1);
+                studioObject.rotation.set(0, 0, 0);
+
+                if (config.inspectRotation) {
+                    studioObject.rotation.x = config.inspectRotation.x || 0;
+                    studioObject.rotation.y = config.inspectRotation.y || 0;
+                    studioObject.rotation.z = config.inspectRotation.z || 0;
+                }
+
+                studioObject.traverse((child) => {
+                    if(child.isMesh) {
+                        child.material.side = THREE.DoubleSide;
+                        if(child.material.isMeshStandardMaterial) {
+                            child.material.metalness = 0.0; 
+                            child.material.roughness = 0.5;
+                            child.material.emissive = new THREE.Color(0x222222);
+                        }
+                    }
+                });
+
+                studioObject.updateMatrixWorld(true);
+
+                const box = new THREE.Box3().setFromObject(studioObject);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                studioObject.position.x = -center.x;
+                studioObject.position.y = -center.y;
+                studioObject.position.z = -center.z;
+                
+                studioPivot = new THREE.Group();
+                studioPivot.add(studioObject);
+                sceneStudio.add(studioPivot);
+
+                const maxDim = Math.max(size.x, size.y, size.z);
+                cameraStudio.position.z = Math.max(maxDim * 2.0, 1.0); 
+                cameraStudio.lookAt(0, 0, 0);
+
+                document.getElementById('inspect-title').innerText = config.title;
+                document.getElementById('inspect-desc').innerText = config.desc;
+                document.getElementById('inspect-overlay').style.display = 'block';
+                document.getElementById('crosshair').style.display = 'none';
+                document.getElementById('interact-hint').style.display = 'none';
+            }
+        }
+
+        function findConfigInHierarchy(mesh) {
+            let current = mesh;
+            while (current) {
+                for (const key in INTERACT_CONFIG) {
+                    if (current.name.toLowerCase().includes(key.toLowerCase())) {
+                        return { config: INTERACT_CONFIG[key], root: current };
+                    }
+                }
+                if (current.parent === scene) break; 
+                current = current.parent;
+            }
+            return null;
+        }
+
+        function checkInteraction() {
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(collisionObjects, true);
+            const crosshair = document.getElementById('crosshair');
+            const hint = document.getElementById('interact-hint');
+
+            if (intersects.length > 0) {
+                const dist = intersects[0].distance;
+                if (dist < 3.0) {
+                    const result = findConfigInHierarchy(intersects[0].object);
+                    
+                    if (result) {
+                        hoverConfig = result.config;
+                        hoverRoot = result.root;   
+                        hoverPoint = intersects[0].point;
+
+                        crosshair.style.width = "20px";
+                        crosshair.style.height = "20px";
+                        crosshair.style.border = "1px solid #fff";
+                        crosshair.style.backgroundColor = "rgba(255,255,255,0.2)";
+                        
+                        hint.style.display = "block";
+                        hint.innerText = hoverConfig.title || "INTERACT";
+                    } else {
+                        hoverConfig = null;
+                        resetCrosshair();
+                    }
+                } else {
+                    hoverConfig = null;
+                    resetCrosshair();
+                }
+            } else {
+                hoverConfig = null;
+                resetCrosshair();
+            }
+        }
+
+        function resetCrosshair() {
+            const crosshair = document.getElementById('crosshair');
+            const hint = document.getElementById('interact-hint');
+            crosshair.style.width = "8px";
+            crosshair.style.height = "8px";
+            crosshair.style.border = "1px solid rgba(255,255,255,0.8)";
+            crosshair.style.backgroundColor = "transparent";
+            hint.style.display = "none";
+        }
+
+        window.addEventListener('keydown', (e) => {
+            keysPressed[e.code] = true;
+            if (e.code === 'Space') {
+                if (controlState !== "move") exitInteraction();
             }
         });
-
-        joystickManager.on('end', () => {
-            inputState.joyFwd = 0;
-            inputState.joyTurn = 0;
+        window.addEventListener('keyup', (e) => keysPressed[e.code] = false);
+        
+        const joystickManager = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static', position: { left: '50%', top: '50%' }, color: 'white'
         });
+        let joystickVector = { x: 0, y: 0 };
+        joystickManager.on('move', (evt, data) => {
+            if (data.vector) { joystickVector.x = data.vector.x; joystickVector.y = data.vector.y; }
+        });
+        joystickManager.on('end', () => { joystickVector.x = 0; joystickVector.y = 0; });
 
-        // 4. 動畫迴圈
         function animate() {
             requestAnimationFrame(animate);
             if (!isGameActive) return;
 
             const dt = clock.getDelta();
-            if (mixer) mixer.update(dt);
 
-            if (player) {
-                // --- 1. 計算鍵盤輸入 ---
-                inputState.keyFwd = 0;
-                inputState.keyTurn = 0;
+            renderer.clear();
+            composer.render();
 
-                // 支援 W/S/Up/Down
-                if (keysPressed['KeyW'] || keysPressed['ArrowUp']) inputState.keyFwd = 1;
-                if (keysPressed['KeyS'] || keysPressed['ArrowDown']) inputState.keyFwd = -1;
-                
-                // 支援 A/D/Left/Right
-                if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) inputState.keyTurn = 1;
-                if (keysPressed['KeyD'] || keysPressed['ArrowRight']) inputState.keyTurn = -1;
+            if (controlState === "inspect" && studioPivot) {
+                studioPivot.rotation.y += 0.2 * dt; 
+                renderer.clearDepth(); 
+                renderer.render(sceneStudio, cameraStudio);
+            }
 
-                // --- 2. 合併輸入 (搖桿優先，若搖桿沒動則用鍵盤) ---
-                // 這樣電腦版和手機版都能完美運作
-                const finalFwd = inputState.joyFwd !== 0 ? inputState.joyFwd : inputState.keyFwd;
-                const finalTurn = inputState.joyTurn !== 0 ? inputState.joyTurn : inputState.keyTurn;
+            if (controlState === "move") {
+                checkInteraction();
 
-                const moveSpeed = 10 * dt;
-                const rotSpeed = 3 * dt;
+                let moveForward = 0;
+                let moveRight = 0;
 
-                // --- 3. 執行移動 ---
-                if (Math.abs(finalFwd) > 0.1) {
-                    player.translateZ(finalFwd * moveSpeed);
-                    fadeToAction('Running', 0.2);
-                } else {
-                    fadeToAction('Idle', 0.2);
-                }
+                if (keysPressed['KeyW'] || keysPressed['ArrowUp']) moveForward = 1;
+                if (keysPressed['KeyS'] || keysPressed['ArrowDown']) moveForward = -1;
+                if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) moveRight = -1;
+                if (keysPressed['KeyD'] || keysPressed['ArrowRight']) moveRight = 1;
 
-                if (Math.abs(finalTurn) > 0.1) {
-                    player.rotation.y += finalTurn * rotSpeed;
-                }
+                if (joystickVector.y !== 0) moveForward = joystickVector.y;
+                if (joystickVector.x !== 0) moveRight = joystickVector.x;
 
-                // --- 4. 攝影機跟隨 ---
-                const offset = new THREE.Vector3(0, 6, -12);
-                const target = offset.applyMatrix4(player.matrixWorld);
-                camera.position.lerp(target, 0.1);
-                camera.lookAt(player.position.x, player.position.y + 2, player.position.z);
+                const currentSpeed = keysPressed['ShiftLeft'] ? sprintSpeed : moveSpeed;
 
-                // --- 5. 傳送門互動 ---
-                let nearPortal = null;
-                portals.forEach(p => {
-                    p.children[0].rotation.y += 0.02; 
-                    if (player.position.distanceTo(p.position) < 3) nearPortal = p;
-                });
+                direction.set(0, 0, 0);
+                const forwardVec = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+                const rightVec = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
 
-                const ui = document.getElementById('interaction-ui');
-                const title = document.getElementById('portal-title');
-                
-                if (nearPortal) {
-                    ui.style.display = 'block';
-                    title.innerText = nearPortal.userData.title;
-                    
-                    // 電腦版 Enter 鍵監聽
-                    if (keysPressed['Enter']) {
-                        window.open(nearPortal.userData.url, '_blank');
-                        keysPressed['Enter'] = false; // 避免重複觸發
+                if (moveForward !== 0) direction.add(forwardVec.multiplyScalar(moveForward));
+                if (moveRight !== 0) direction.add(rightVec.multiplyScalar(moveRight));
+
+                direction.normalize(); 
+
+                let isMoving = (moveForward !== 0 || moveRight !== 0);
+
+                if (isMoving) {
+                    const moveDist = currentSpeed * dt;
+                    const nextPos = player.position.clone().add(direction.clone().multiplyScalar(moveDist));
+                    if (!checkCollision(nextPos)) {
+                        player.position.copy(nextPos);
                     }
-                } else {
-                    ui.style.display = 'none';
                 }
+
+                let bobOffset = 0;
+                if (isMoving) {
+                    const bobFreq = keysPressed['ShiftLeft'] ? 15 : bobFrequency; 
+                    const bobAmp = keysPressed['ShiftLeft'] ? 0.2 : bobAmplitude; 
+                    bobOffset = Math.sin(clock.elapsedTime * bobFreq) * bobAmp;
+                } else {
+                    bobOffset = THREE.MathUtils.lerp(0, 0, 0.1);
+                }
+
+                const targetCamY = player.position.y + baseHeight + bobOffset;
+                currentCamHeight = THREE.MathUtils.lerp(currentCamHeight, targetCamY, 0.1);
+
+                camera.position.x = player.position.x;
+                camera.position.z = player.position.z;
+                camera.position.y = currentCamHeight;
+                
+                camera.rotation.x = cameraPitch;
+                camera.rotation.y = cameraYaw;
+            } 
+            else if (controlState === "sit") {
+                const targetCamY = player.position.y + sitHeight;
+                currentCamHeight = THREE.MathUtils.lerp(currentCamHeight, targetCamY, 0.05);
+                camera.position.x = player.position.x;
+                camera.position.z = player.position.z;
+                camera.position.y = currentCamHeight;
+                camera.rotation.y = THREE.MathUtils.lerp(camera.rotation.y, cameraYaw, 0.1);
+                camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, 0, 0.1);
             }
-
-            renderer.render(scene, camera);
-        }
-
-        // 手機版：點擊螢幕也可以進入傳送門
-        window.addEventListener('click', (e) => {
-            // 避免點到搖桿也觸發
-            if(e.target.closest('#joystick-zone')) return;
-
-            const ui = document.getElementById('interaction-ui');
-            if (ui.style.display === 'block' && player) {
-                 let nearest = null;
-                 let minDist = 999;
-                 portals.forEach(p => {
-                     const d = player.position.distanceTo(p.position);
-                     if(d < 3.5 && d < minDist) { nearest = p; minDist = d; }
-                 });
-                 if(nearest) window.open(nearest.userData.url, '_blank');
-            }
-        });
-
-        function fadeToAction(name, duration) {
-            if (!actions[name] || activeAction === actions[name]) return;
-            previousAction = activeAction;
-            activeAction = actions[name];
-            previousAction.fadeOut(duration);
-            activeAction.reset().fadeIn(duration).play();
         }
 
         window.addEventListener('resize', () => {
-            if(camera && renderer) {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-            }
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            
+            cameraStudio.aspect = window.innerWidth / window.innerHeight;
+            cameraStudio.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
         init();
